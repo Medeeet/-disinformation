@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Результаты — Детектор дезинформации{% endblock %}
+
+{% block content %}
+<section class="results-page">
+    <a href="/" class="btn btn-back">&larr; Новый анализ</a>
+
+    <div class="score-card score-{{ verdict }}">
+        <div class="score-circle">
+            <span class="score-value">{{ "%.0f"|format(overall_score * 100) }}%</span>
+        </div>
+        <div class="score-info">
+            <h2>{{ verdict_label }}</h2>
+            <p class="score-description">{{ verdict_description }}</p>
+        </div>
+    </div>
+
+    <div class="details-grid">
+        <div class="detail-card">
+            <h3>ML-модель</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ (ml_score or 0) * 100 }}%"></div>
+            </div>
+            <span class="detail-score">{{ "%.0f"|format((ml_score or 0) * 100) }}%</span>
+            {% if not ml_score %}
+            <p class="detail-note">Модель не загружена</p>
+            {% endif %}
+        </div>
+
+        <div class="detail-card">
+            <h3>Кликбейт</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ (rule_scores.clickbait or 0) * 100 }}%"></div>
+            </div>
+            <span class="detail-score">{{ "%.0f"|format((rule_scores.clickbait or 0) * 100) }}%</span>
+        </div>
+
+        <div class="detail-card">
+            <h3>Лингвистика</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ (rule_scores.linguistic or 0) * 100 }}%"></div>
+            </div>
+            <span class="detail-score">{{ "%.0f"|format((rule_scores.linguistic or 0) * 100) }}%</span>
+        </div>
+
+        <div class="detail-card">
+            <h3>Источник</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ (rule_scores.source_credibility or 0) * 100 }}%"></div>
+            </div>
+            <span class="detail-score">{{ "%.0f"|format((rule_scores.source_credibility or 0) * 100) }}%</span>
+        </div>
+
+        <div class="detail-card">
+            <h3>Структура</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ (rule_scores.structural or 0) * 100 }}%"></div>
+            </div>
+            <span class="detail-score">{{ "%.0f"|format((rule_scores.structural or 0) * 100) }}%</span>
+        </div>
+    </div>
+
+    {% if flagged_patterns %}
+    <div class="flagged-section">
+        <h3>Обнаруженные признаки</h3>
+        <ul class="flags-list">
+            {% for flag in flagged_patterns %}
+            <li class="flag-item">{{ flag }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if input_text %}
+    <div class="source-text">
+        <h3>Исходный текст</h3>
+        <p>{{ input_text[:1000] }}{% if input_text|length > 1000 %}...{% endif %}</p>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

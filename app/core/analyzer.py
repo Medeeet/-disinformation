@@ -1,0 +1,76 @@
+"""Главный оркестратор анализа текста."""
+
+import json
+import uuid
+
+import aiosqlite
+
+from app.config import DB_PATH
+from app.core.ml_engine import ml_engine
+from app.core.rule_engine import run_all_rules
+from app.core.score_combiner import combine_scores
+from app.db.models import INSERT_ANALYSIS
+
+
+async def analyze_text(text: str, url: str | None = None) -> dict:
+    """
+    Полный анализ текста: ML + правила → комбинированный скор.
+
+    Returns:
+        dict с полными результатами анализа.
+    """
+    analysis_id = str(uuid.uuid4())
+
+    # ML-инференс
+    ml_score = ml_engine.predict(text)
+
+    # Правила
+    rules_result = await run_all_rules(text, url)
+    rule_score = rules_result["combined_score"]
+
+    # Комбинирование
+    overall_score, verdict = combine_scores(ml_score, rule_score)
+
+    # Короткий текст: модель ненадёжна на < 30 словах — ограничиваем вердикт
+    word_count = len(text.split())
+    if word_count < 30:
+        from app.config import THRESHOLDS
+        # Не выше "uncertain" — недостаточно текста для уверенного вывода
+        overall_score = min(overall_score, THRESHOLDS["uncertain"] - 0.01)
+        verdict = "uncertain"
+        rules_result["flagged_patterns"].insert(
+            0, f"Мало текста ({word_count} слов) — для точного анализа нужно от 30 слов"
+        )
+
+    result = {
+        "analysis_id": analysis_id,
+        "overall_score": round(overall_score, 4),
+        "verdict": verdict,
+        "ml_score": round(ml_score, 4) if ml_score is not None else None,
+        "rule_scores": rules_result["scores"],
+        "flagged_patterns": rules_result["flagged_patterns"],
+    }
+
+    # Сохраняем в БД
+    details_json = json.dumps({
+        "rule_scores": rules_result["scores"],
+        "flagged_patterns": rules_result["flagged_patterns"],
+    }, ensure_ascii=False)
+
+    try:
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute(INSERT_ANALYSIS, (
+                analysis_id,
+                text[:5000],  # Ограничиваем длину
+                url,
+                overall_score,
+                ml_score,
+                rule_score,
+                verdict,
+                details_json,
+            ))
+            await db.commit()
+    except Exception:
+        pass  # Не прерываем анализ из-за ошибки БД
+
+    return result

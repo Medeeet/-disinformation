@@ -1,0 +1,44 @@
+[
+  {"domain": "habr.com", "credibility_score": 0.80, "category": "tech_media", "notes": "Хабр — IT платформа, пользовательский контент с модерацией"},
+  {"domain": "reuters.com", "credibility_score": 0.95, "category": "international_agency", "notes": "Международное информагентство"},
+  {"domain": "apnews.com", "credibility_score": 0.95, "category": "international_agency", "notes": "Associated Press"},
+  {"domain": "bbc.com", "credibility_score": 0.90, "category": "international_media", "notes": "BBC News"},
+
+  {"domain": "inform.kz", "credibility_score": 0.75, "category": "kz_state_agency", "notes": "МИА Казинформ — государственное агентство"},
+  {"domain": "tengrinews.kz", "credibility_score": 0.75, "category": "kz_online_media", "notes": "Tengrinews — популярное казахстанское СМИ"},
+  {"domain": "zakon.kz", "credibility_score": 0.70, "category": "kz_online_media", "notes": "Zakon.kz — правовой портал"},
+  {"domain": "kursiv.media", "credibility_score": 0.80, "category": "kz_business_media", "notes": "Курсив — деловое издание"},
+  {"domain": "kapital.kz", "credibility_score": 0.75, "category": "kz_business_media", "notes": "Капитал — деловое издание"},
+  {"domain": "forbes.kz", "credibility_score": 0.80, "category": "kz_business_media", "notes": "Forbes Kazakhstan"},
+  {"domain": "vlast.kz", "credibility_score": 0.85, "category": "kz_independent_media", "notes": "Власть — аналитическое издание"},
+  {"domain": "masa.media", "credibility_score": 0.80, "category": "kz_independent_media", "notes": "Masa Media — независимое СМИ"},
+  {"domain": "azattyq.org", "credibility_score": 0.80, "category": "kz_independent_media", "notes": "Азаттық — Радио Свобода Казахстан"},
+  {"domain": "orda.kz", "credibility_score": 0.70, "category": "kz_online_media", "notes": "Orda.kz — казахстанское СМИ"},
+  {"domain": "informburo.kz", "credibility_score": 0.70, "category": "kz_online_media", "notes": "Informburo.kz"},
+  {"domain": "the-steppe.com", "credibility_score": 0.75, "category": "kz_independent_media", "notes": "The Steppe — казахстанское медиа"},
+  {"domain": "ulysmedia.kz", "credibility_score": 0.65, "category": "kz_online_media", "notes": "Ұлыс Медиа"},
+
+  {"domain": "24.kz", "credibility_score": 0.60, "category": "kz_state_media", "notes": "24.kz — государственный канал"},
+  {"domain": "khabar.kz", "credibility_score": 0.60, "category": "kz_state_media", "notes": "Хабар — государственный канал"},
+  {"domain": "egemen.kz", "credibility_score": 0.55, "category": "kz_state_media", "notes": "Егемен Қазақстан — государственная газета"},
+  {"domain": "kazpravda.kz", "credibility_score": 0.55, "category": "kz_state_media", "notes": "Казахстанская правда — государственная газета"},
+
+  {"domain": "nur.kz", "credibility_score": 0.50, "category": "kz_tabloid", "notes": "NUR.KZ — развлекательный портал с новостями"},
+  {"domain": "today.kz", "credibility_score": 0.50, "category": "kz_tabloid", "notes": "Today.kz — новостной портал"},
+  {"domain": "qamshy.kz", "credibility_score": 0.45, "category": "kz_tabloid", "notes": "Qamshy — национал-популистский контент"},
+  {"domain": "abai.kz", "credibility_score": 0.40, "category": "kz_tabloid", "notes": "Abai.kz — сомнительный контент"},
+
+  {"domain": "sputnik.kz", "credibility_score": 0.30, "category": "propaganda", "notes": "Sputnik Казахстан — пропагандистское СМИ"},
+  {"domain": "rt.com", "credibility_score": 0.30, "category": "propaganda", "notes": "Russia Today — пропагандистское СМИ"},
+  {"domain": "russian.rt.com", "credibility_score": 0.30, "category": "propaganda", "notes": "RT на русском"},
+  {"domain": "tsargrad.tv", "credibility_score": 0.20, "category": "propaganda", "notes": "Царьград — пропаганда"},
+  {"domain": "topwar.ru", "credibility_score": 0.25, "category": "military_blog", "notes": "Военное обозрение — блог"},
+
+  {"domain": "zen.yandex.ru", "credibility_score": 0.40, "category": "ugc_platform", "notes": "Яндекс.Дзен — UGC"},
+  {"domain": "dzen.ru", "credibility_score": 0.40, "category": "ugc_platform", "notes": "Дзен — UGC"},
+  {"domain": "vk.com", "credibility_score": 0.35, "category": "social_network", "notes": "ВКонтакте — соцсеть"},
+  {"domain": "ok.ru", "credibility_score": 0.30, "category": "social_network", "notes": "Одноклассники — соцсеть"},
+  {"domain": "t.me", "credibility_score": 0.30, "category": "messenger", "notes": "Telegram — мессенджер"},
+  {"domain": "instagram.com", "credibility_score": 0.30, "category": "social_network", "notes": "Instagram — соцсеть"},
+  {"domain": "tiktok.com", "credibility_score": 0.25, "category": "social_network", "notes": "TikTok — соцсеть"}
+]

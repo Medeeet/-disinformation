@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}История — Детектор дезинформации{% endblock %}
+
+{% block content %}
+<section class="history-page">
+    <h1>История анализов</h1>
+
+    {% if analyses %}
+    <table class="history-table">
+        <thead>
+            <tr>
+                <th>Дата</th>
+                <th>Текст</th>
+                <th>Скор</th>
+                <th>Вердикт</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for a in analyses %}
+            <tr class="verdict-row verdict-{{ a.verdict }}">
+                <td>{{ a.created_at }}</td>
+                <td class="text-preview">{{ a.input_text[:100] }}{% if a.input_text|length > 100 %}...{% endif %}</td>
+                <td>{{ "%.0f"|format(a.overall_score * 100) }}%</td>
+                <td><span class="badge badge-{{ a.verdict }}">{{ a.verdict }}</span></td>
+                <td><a href="/analysis/{{ a.id }}" class="btn btn-sm">Подробнее</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if total_pages > 1 %}
+    <div class="pagination">
+        {% if page > 1 %}
+        <a href="/history?page={{ page - 1 }}" class="btn btn-sm">&larr; Назад</a>
+        {% endif %}
+        <span>Страница {{ page }} из {{ total_pages }}</span>
+        {% if page < total_pages %}
+        <a href="/history?page={{ page + 1 }}" class="btn btn-sm">Далее &rarr;</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <p class="empty-state">Пока нет анализов. <a href="/">Начать анализ</a></p>
+    {% endif %}
+</section>
+{% endblock %}
