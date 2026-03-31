@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Результаты — Детектор дезинформации{% endblock %}
+{% block title %}Результаты — CyberShield KZ{% endblock %}
 
 {% block content %}
 <section class="results-page">
@@ -12,6 +12,9 @@
         </div>
         <div class="score-info">
             <h2>{{ verdict_label }}</h2>
+            {% if threat_type and threat_type != 'safe' %}
+            <span class="threat-badge threat-{{ threat_type }}">{{ threat_label }}</span>
+            {% endif %}
             <p class="score-description">{{ verdict_description }}</p>
         </div>
     </div>
@@ -59,6 +62,14 @@
             </div>
             <span class="detail-score">{{ "%.0f"|format((rule_scores.structural or 0) * 100) }}%</span>
         </div>
+
+        <div class="detail-card detail-card-cyber">
+            <h3>Фишинг / Соц. инженерия</h3>
+            <div class="progress-bar">
+                <div class="progress-fill progress-fill-cyber" style="width: {{ (rule_scores.phishing or 0) * 100 }}%"></div>
+            </div>
+            <span class="detail-score">{{ "%.0f"|format((rule_scores.phishing or 0) * 100) }}%</span>
+        </div>
     </div>
 
     {% if flagged_patterns %}
@@ -66,7 +77,7 @@
         <h3>Обнаруженные признаки</h3>
         <ul class="flags-list">
             {% for flag in flagged_patterns %}
-            <li class="flag-item">{{ flag }}</li>
+            <li class="flag-item {% if '[Кибербез]' in flag %}flag-item-cyber{% endif %}">{{ flag }}</li>
             {% endfor %}
         </ul>
     </div>

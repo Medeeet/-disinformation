@@ -21,18 +21,52 @@ from app.db.models import (
 router = APIRouter()
 templates = Jinja2Templates(directory=BASE_DIR / "app" / "templates")
 
-VERDICT_LABELS = {
-    "reliable": "Достоверно",
-    "uncertain": "Неопределённо",
-    "suspicious": "Подозрительно",
-    "likely_disinformation": "Вероятная дезинформация",
+_THREAT_NAMES = {
+    "disinformation":     "дезинформация",
+    "phishing":           "фишинг",
+    "social_engineering": "социальная инженерия",
+    "scam":               "мошенничество",
+    "propaganda":         "пропаганда",
+    "safe":               "",
 }
-VERDICT_DESCRIPTIONS = {
-    "reliable": "Текст не содержит значимых признаков дезинформации",
-    "uncertain": "Обнаружены отдельные признаки, но их недостаточно для однозначного вывода",
-    "suspicious": "Обнаружено несколько признаков дезинформации, рекомендуется проверить источник",
-    "likely_disinformation": "Высокая вероятность дезинформации — множество признаков",
+
+_THREAT_LABELS = {
+    "disinformation":     "Дезинформация",
+    "phishing":           "Фишинг",
+    "social_engineering": "Социальная инженерия",
+    "scam":               "Мошенничество (скам)",
+    "propaganda":         "Пропаганда",
+    "safe":               "Безопасно",
 }
+
+_THREAT_DESCRIPTIONS = {
+    "disinformation":     "Текст содержит признаки дезинформации: манипулятивная риторика, кликбейт или ненадёжный источник",
+    "phishing":           "Обнаружены признаки фишинговой атаки: запросы данных, имитация банков или госорганов",
+    "social_engineering": "Обнаружены методы социальной инженерии: давление, запугивание, имитация власти",
+    "scam":               "Обнаружены признаки мошенничества: фейковые выигрыши, схемы «комиссия за приз»",
+    "propaganda":         "Источник относится к категории пропагандистских СМИ с низким рейтингом доверия",
+    "safe":               "Информационных угроз не обнаружено",
+}
+
+
+def _build_verdict_label(verdict: str, threat_type: str) -> str:
+    if verdict == "reliable":
+        return "Угроз не обнаружено"
+    if verdict == "uncertain":
+        threat = _THREAT_NAMES.get(threat_type, "")
+        return f"Неопределённо" + (f" / {threat}" if threat else "")
+    if verdict == "suspicious":
+        return f"Подозрительно: {_THREAT_LABELS.get(threat_type, 'неизвестная угроза')}"
+    # likely_disinformation
+    return f"Высокий риск: {_THREAT_LABELS.get(threat_type, 'неизвестная угроза')}"
+
+
+def _build_verdict_description(verdict: str, threat_type: str) -> str:
+    if verdict == "reliable":
+        return _THREAT_DESCRIPTIONS["safe"]
+    if verdict == "uncertain":
+        return "Обнаружены слабые признаки угрозы, но их недостаточно для однозначного вывода"
+    return _THREAT_DESCRIPTIONS.get(threat_type, "Обнаружены признаки информационной угрозы")
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -74,13 +108,16 @@ async def analyze_endpoint(request: Request, text: str = Form(""), url: str = Fo
     result = await analyze_text(input_text, input_url or None)
 
     verdict = result["verdict"]
+    threat_type = result.get("threat_type", "disinformation")
     template_data = {
         "request": request,
         "analysis_id": result["analysis_id"],
         "overall_score": result["overall_score"],
         "verdict": verdict,
-        "verdict_label": VERDICT_LABELS.get(verdict, verdict),
-        "verdict_description": VERDICT_DESCRIPTIONS.get(verdict, ""),
+        "threat_type": threat_type,
+        "threat_label": _THREAT_LABELS.get(threat_type, ""),
+        "verdict_label": _build_verdict_label(verdict, threat_type),
+        "verdict_description": _build_verdict_description(verdict, threat_type),
         "ml_score": result.get("ml_score"),
         "rule_scores": result["rule_scores"],
         "flagged_patterns": result.get("flagged_patterns", []),
@@ -102,16 +139,23 @@ async def analysis_detail(request: Request, analysis_id: str):
 
     details = json.loads(row["details_json"]) if row["details_json"] else {}
     verdict = row["verdict"]
+    rule_scores = details.get("rule_scores", {})
+    flagged = details.get("flagged_patterns", [])
+    threat_type = details.get("threat_type") or (
+        "safe" if verdict == "reliable" else "disinformation"
+    )
 
     return templates.TemplateResponse("results.html", {
         "request": request,
         "overall_score": row["overall_score"],
         "verdict": verdict,
-        "verdict_label": VERDICT_LABELS.get(verdict, verdict),
-        "verdict_description": VERDICT_DESCRIPTIONS.get(verdict, ""),
+        "threat_type": threat_type,
+        "threat_label": _THREAT_LABELS.get(threat_type, ""),
+        "verdict_label": _build_verdict_label(verdict, threat_type),
+        "verdict_description": _build_verdict_description(verdict, threat_type),
         "ml_score": row["ml_score"],
-        "rule_scores": details.get("rule_scores", {}),
-        "flagged_patterns": details.get("flagged_patterns", []),
+        "rule_scores": rule_scores,
+        "flagged_patterns": flagged,
         "input_text": row["input_text"],
     })
 

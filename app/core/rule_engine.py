@@ -5,6 +5,7 @@ from app.rules.linguistic import check_linguistic
 from app.rules.source_check import check_source
 from app.rules.structural import check_structural
 from app.rules.fact_check import check_fact_check
+from app.rules.phishing import check_phishing
 
 
 async def run_all_rules(text: str, url: str | None = None) -> dict:
@@ -19,6 +20,7 @@ async def run_all_rules(text: str, url: str | None = None) -> dict:
                 "source_credibility": float,
                 "structural": float,
                 "fact_check": float | None,
+                "phishing": float,
             },
             "combined_score": float,
             "flagged_patterns": list[str],
@@ -34,7 +36,7 @@ async def run_all_rules(text: str, url: str | None = None) -> dict:
     linguistic_score, linguistic_flags = check_linguistic(text)
     all_flags.extend(linguistic_flags)
 
-    # Источник
+    # Источник и безопасность URL
     source_score, source_flags = check_source(url)
     all_flags.extend(source_flags)
 
@@ -46,13 +48,18 @@ async def run_all_rules(text: str, url: str | None = None) -> dict:
     fact_check_score, fact_check_flags = await check_fact_check(text)
     all_flags.extend(fact_check_flags)
 
+    # Фишинг и социальная инженерия
+    phishing_score, phishing_flags = check_phishing(text, url)
+    all_flags.extend(phishing_flags)
+
     # Взвешенный скор правил
     weights = {
-        "clickbait": 0.25,
-        "linguistic": 0.25,
-        "source_credibility": 0.2,
-        "structural": 0.2,
-        "fact_check": 0.1,
+        "clickbait": 0.20,
+        "linguistic": 0.20,
+        "source_credibility": 0.15,
+        "structural": 0.15,
+        "fact_check": 0.10,
+        "phishing": 0.20,
     }
 
     scores = {
@@ -61,6 +68,7 @@ async def run_all_rules(text: str, url: str | None = None) -> dict:
         "source_credibility": source_score,
         "structural": structural_score,
         "fact_check": fact_check_score,
+        "phishing": phishing_score,
     }
 
     total_weight = 0.0

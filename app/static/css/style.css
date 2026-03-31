@@ -386,6 +386,34 @@ footer {
     overflow: visible;
 }
 
+/* Example card badges */
+.badge-phishing       { background: #a855f720; color: #a855f7; }
+.badge-scam           { background: #f9731620; color: #f97316; }
+.badge-se             { background: #e879a520; color: #e879a5; }
+.badge-propaganda     { background: #dc262620; color: #dc2626; }
+.badge-disinformation { background: #ef444420; color: #ef4444; }
+.badge-safe           { background: #22c55e20; color: #22c55e; }
+
+/* Threat type badge (shown in results) */
+.threat-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin: 4px 0 8px;
+    letter-spacing: 0.3px;
+}
+.threat-disinformation     { background: #ef444420; color: #ef4444; border: 1px solid #ef444440; }
+.threat-phishing           { background: #a855f720; color: #a855f7; border: 1px solid #a855f740; }
+.threat-social_engineering { background: #e879a520; color: #e879a5; border: 1px solid #e879a540; }
+.threat-scam               { background: #f9731620; color: #f97316; border: 1px solid #f9731640; }
+.threat-propaganda         { background: #dc262620; color: #dc2626; border: 1px solid #dc262640; }
+
+.detail-card-cyber      { border-color: #a855f740; }
+.progress-fill-cyber    { background: linear-gradient(90deg, #a855f7, #6366f1); }
+.flag-item-cyber        { border-left-color: #a855f7; }
+
 /* Tabs */
 .examples-tabs {
     display: flex;

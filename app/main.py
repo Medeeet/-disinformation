@@ -18,9 +18,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Детектор дезинформации",
-    description="Веб-система выявления дезинформации на основе ML и правил",
-    version="1.0.0",
+    title="CyberShield KZ",
+    description="Система защиты от информационных угроз: дезинформация, фишинг, социальная инженерия",
+    version="2.0.0",
     lifespan=lifespan,
 )
 

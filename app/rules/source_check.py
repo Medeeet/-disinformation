@@ -1,4 +1,8 @@
-"""Проверка репутации источника по домену."""
+"""Проверка репутации источника и безопасности URL.
+
+Модуль кибербезопасности: анализ доменов, обнаружение тайпсквоттинга,
+фишинговых URL, подозрительных TLD и структурных аномалий URL.
+"""
 
 import json
 import re
@@ -46,18 +50,41 @@ LEGITIMATE_DOMAINS = {
     "meduza.io", "novayagazeta.ru",
 }
 
+# Казахстанские домены для проверки тайпсквоттинга
+KZ_LEGITIMATE_DOMAINS = {
+    "egov.kz", "gov.kz", "nationalbank.kz", "kaspi.kz",
+    "halykbank.kz", "tengrinews.kz", "zakon.kz", "inform.kz",
+    "kapital.kz", "vlast.kz", "forbes.kz", "nur.kz",
+}
+
 
 def _check_domain_mimicry(domain: str) -> tuple[float, list[str]]:
-    """Проверяет, мимикрирует ли домен под известный источник."""
+    """Проверяет, мимикрирует ли домен под известный источник (тайпсквоттинг)."""
     flags = []
     if not domain:
         return 0.0, flags
 
-    for legit in LEGITIMATE_DOMAINS:
+    all_legit = LEGITIMATE_DOMAINS | KZ_LEGITIMATE_DOMAINS
+
+    for legit in all_legit:
         legit_base = legit.split(".")[0]
         if legit_base in domain and domain != legit and not domain.endswith(f".{legit}"):
-            flags.append(f"Домен '{domain}' похож на легитимный '{legit}'")
+            flags.append(f"[Кибербез] Тайпсквоттинг: домен '{domain}' имитирует '{legit}'")
             return 0.8, flags
+
+    # Проверка на замену символов (гомоглифы / опечатки)
+    _typosquat_pairs = {
+        "kaspi": ["kasp1", "kaspl", "kaspy", "kaspii", "kaspi-bank"],
+        "egov": ["eg0v", "eqov", "egov-kz", "e-gov"],
+        "halyk": ["ha1yk", "haluk", "halyk-bank"],
+        "tengri": ["tengr1", "tenqri", "tengrl"],
+    }
+    domain_base = domain.split(".")[0].lower()
+    for legit_name, typos in _typosquat_pairs.items():
+        for typo in typos:
+            if domain_base == typo or domain_base.startswith(typo):
+                flags.append(f"[Кибербез] Тайпсквоттинг: '{domain}' похож на '{legit_name}'")
+                return 0.85, flags
 
     return 0.0, flags
 
@@ -68,18 +95,85 @@ def _check_suspicious_tld(domain: str) -> tuple[float, list[str]]:
     if not domain:
         return 0.0, flags
 
-    suspicious_tlds = {".tk", ".ml", ".ga", ".cf", ".gq", ".xyz", ".top", ".buzz", ".click"}
+    suspicious_tlds = {".tk", ".ml", ".ga", ".cf", ".gq", ".xyz", ".top", ".buzz", ".click",
+                       ".work", ".racing", ".download", ".stream", ".loan", ".date", ".win"}
     for tld in suspicious_tlds:
         if domain.endswith(tld):
-            flags.append(f"Подозрительный домен верхнего уровня: {tld}")
+            flags.append(f"[Кибербез] Подозрительный домен верхнего уровня: {tld}")
             return 0.5, flags
 
     return 0.0, flags
 
 
+def _check_url_security(url: str) -> tuple[float, list[str]]:
+    """Расширенный анализ безопасности URL."""
+    flags = []
+    scores = []
+
+    if not url:
+        return 0.0, flags
+
+    # HTTP без шифрования
+    if url.lower().startswith("http://"):
+        flags.append("[Кибербез] URL без шифрования (HTTP вместо HTTPS)")
+        scores.append(0.3)
+
+    try:
+        parsed = urlparse(url if "://" in url else f"https://{url}")
+    except Exception:
+        return 0.0, flags
+
+    hostname = parsed.hostname or ""
+    path = parsed.path or ""
+    query = parsed.query or ""
+
+    # IP-адрес вместо домена
+    if re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', hostname):
+        flags.append(f"[Кибербез] URL использует IP-адрес вместо домена: {hostname}")
+        scores.append(0.7)
+
+    # Избыточная длина URL (часто используется в фишинге)
+    if len(url) > 200:
+        flags.append(f"[Кибербез] Подозрительно длинный URL ({len(url)} символов)")
+        scores.append(0.4)
+
+    # Множество поддоменов
+    if hostname.count(".") >= 4:
+        flags.append(f"[Кибербез] Множество поддоменов: {hostname}")
+        scores.append(0.6)
+
+    # Символ @ в URL (редирект-трюк)
+    if "@" in url.split("//", 1)[-1].split("/", 1)[0]:
+        flags.append("[Кибербез] Символ @ в URL — возможная маскировка реального домена")
+        scores.append(0.8)
+
+    # Кодированные символы в домене
+    if "%" in hostname:
+        flags.append("[Кибербез] URL-кодирование в имени домена — возможная обфускация")
+        scores.append(0.6)
+
+    # Подозрительные ключевые слова в пути
+    phish_path_keywords = ["login", "signin", "verify", "secure", "account",
+                           "update", "confirm", "banking", "password", "wallet"]
+    path_lower = path.lower()
+    kw_found = [kw for kw in phish_path_keywords if kw in path_lower]
+    if len(kw_found) >= 2:
+        flags.append(f"[Кибербез] URL содержит фишинговые ключевые слова: {', '.join(kw_found)}")
+        scores.append(0.5)
+
+    # Двойное расширение файла
+    if re.search(r'\.\w{2,4}\.\w{2,4}$', path):
+        flags.append("[Кибербез] Двойное расширение файла в URL — возможная маскировка")
+        scores.append(0.6)
+
+    if scores:
+        return min(1.0, max(scores)), flags
+    return 0.0, flags
+
+
 def check_source(url: str | None) -> tuple[float, list[str]]:
     """
-    Проверяет репутацию источника.
+    Проверяет репутацию источника и безопасность URL.
     Возвращает (score 0.0–1.0, list[str] найденных проблем).
     Скор: 0 = надёжный, 1 = ненадёжный.
     """
@@ -105,7 +199,7 @@ def check_source(url: str | None) -> tuple[float, list[str]]:
             flags.append(f"Источник '{domain}' с низкой репутацией (категория: {category})")
         scores.append(score)
 
-    # Проверка мимикрии
+    # Проверка мимикрии / тайпсквоттинга
     score, mimicry_flags = _check_domain_mimicry(domain)
     if score > 0:
         scores.append(score)
@@ -116,6 +210,12 @@ def check_source(url: str | None) -> tuple[float, list[str]]:
     if score > 0:
         scores.append(score)
         flags.extend(tld_flags)
+
+    # Расширенный анализ безопасности URL
+    score, security_flags = _check_url_security(url)
+    if score > 0:
+        scores.append(score)
+        flags.extend(security_flags)
 
     if scores:
         final_score = max(scores)  # Берём максимальный сигнал

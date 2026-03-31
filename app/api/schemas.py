@@ -12,6 +12,7 @@ class RuleScores(BaseModel):
     source_credibility: float = 0.0
     structural: float = 0.0
     fact_check: float | None = None
+    phishing: float = 0.0
 
 
 class AnalyzeResponse(BaseModel):

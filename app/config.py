@@ -13,14 +13,16 @@ TOKENIZER_PATH = MODELS_DIR / "tokenizer"
 MAX_SEQ_LENGTH = 256
 
 # Веса ансамбля
-ML_WEIGHT = 0.6
-RULES_WEIGHT = 0.4
+# ML_WEIGHT снижен до 0.40: ruBert обучен преимущественно на русском,
+# для казахских текстов правила дают более надёжный сигнал.
+ML_WEIGHT = 0.40
+RULES_WEIGHT = 0.60
 
 # Пороги вердиктов
 THRESHOLDS = {
-    "reliable": 0.3,
-    "uncertain": 0.5,
-    "suspicious": 0.7,
+    "reliable": 0.28,
+    "uncertain": 0.48,
+    "suspicious": 0.68,
 }
 
 # Google Fact Check API

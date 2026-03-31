@@ -25,11 +25,14 @@ def check_structural(text: str, url: str | None = None) -> tuple[float, list[str
 
     # Нет ссылок на источники в тексте
     has_links = bool(re.search(r"https?://\S+", text))
+    # Домен без протокола: например, parlament.kz, nationalbank.kz
+    has_domain_ref = bool(re.search(r"\b\w[\w-]*\.(kz|ru|com|org|net|gov)\b", text, re.IGNORECASE))
     has_citations = bool(re.search(
-        r"(?:по данным|согласно|как (?:сообщает|заявил|написал)|источник:|ссылка:)",
+        r"(?:по данным|согласно|как (?:сообщает|заявил|написал)|источник:|ссылка:|"
+        r"хабарлады|жарияланған|деп хабарлады|баспасөз қызметі|пресс-служб)",
         text, re.IGNORECASE
     ))
-    if not has_links and not has_citations:
+    if not has_links and not has_domain_ref and not has_citations:
         flags.append("Отсутствуют ссылки на источники")
         total_weight += 0.3
 
@@ -55,8 +58,9 @@ def check_structural(text: str, url: str | None = None) -> tuple[float, list[str
 
     # Нет дат/временных привязок
     has_date = bool(re.search(
-        r"\d{1,2}[./]\d{1,2}[./]\d{2,4}|\d{4}\s*год|\b(?:январ|феврал|март|апрел|ма[йя]|"
-        r"июн|июл|август|сентябр|октябр|ноябр|декабр)\w*\s+\d{4}",
+        r"\d{1,2}[./]\d{1,2}[./]\d{2,4}|\d{4}\s*год|\d{4}\s*жыл|"
+        r"\b(?:январ|феврал|март|апрел|ма[йя]|июн|июл|август|сентябр|октябр|ноябр|декабр)\w*\s+\d{4}|"
+        r"\b(?:қаңтар|ақпан|наурыз|сәуір|мамыр|маусым|шілде|тамыз|қыркүйек|қазан|қараша|желтоқсан)\w*",
         text, re.IGNORECASE
     ))
     if not has_date:
