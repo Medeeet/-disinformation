@@ -3,9 +3,6 @@
 import json
 import uuid
 
-import aiosqlite
-
-from app.config import DB_PATH
 from app.core.ml_engine import ml_engine
 from app.core.rule_engine import run_all_rules
 from app.core.score_combiner import combine_scores
@@ -47,7 +44,7 @@ def _detect_threat_type(rule_scores: dict, flagged_patterns: list[str]) -> str:
     return "disinformation"
 
 
-async def analyze_text(text: str, url: str | None = None) -> dict:
+async def analyze_text(text: str, url: str | None = None, pool=None) -> dict:
     """
     Полный анализ текста: ML + правила → комбинированный скор.
 
@@ -60,7 +57,7 @@ async def analyze_text(text: str, url: str | None = None) -> dict:
     ml_score = ml_engine.predict(text)
 
     # Правила
-    rules_result = await run_all_rules(text, url)
+    rules_result = await run_all_rules(text, url, pool=pool)
     rule_score = rules_result["combined_score"]
 
     # Комбинирование
@@ -95,22 +92,24 @@ async def analyze_text(text: str, url: str | None = None) -> dict:
     details_json = json.dumps({
         "rule_scores": rules_result["scores"],
         "flagged_patterns": rules_result["flagged_patterns"],
+        "threat_type": threat_type,
     }, ensure_ascii=False)
 
-    try:
-        async with aiosqlite.connect(DB_PATH) as db:
-            await db.execute(INSERT_ANALYSIS, (
-                analysis_id,
-                text[:5000],  # Ограничиваем длину
-                url,
-                overall_score,
-                ml_score,
-                rule_score,
-                verdict,
-                details_json,
-            ))
-            await db.commit()
-    except Exception:
-        pass  # Не прерываем анализ из-за ошибки БД
+    if pool is not None:
+        try:
+            async with pool.acquire() as conn:
+                await conn.execute(
+                    INSERT_ANALYSIS,
+                    analysis_id,
+                    text[:5000],  # Ограничиваем длину
+                    url,
+                    overall_score,
+                    ml_score,
+                    rule_score,
+                    verdict,
+                    details_json,
+                )
+        except Exception:
+            pass  # Не прерываем анализ из-за ошибки БД
 
     return result

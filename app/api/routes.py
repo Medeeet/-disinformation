@@ -1,13 +1,11 @@
 import json
 import math
 
-from fastapi import APIRouter, Form, Query, Request, Depends
+from fastapi import APIRouter, Form, Query, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-import aiosqlite
-
-from app.config import BASE_DIR, DB_PATH
+from app.config import BASE_DIR
 from app.api.schemas import AnalyzeRequest, AnalyzeResponse, SourceRequest
 from app.core.analyzer import analyze_text
 from app.db.models import (
@@ -105,7 +103,8 @@ async def analyze_endpoint(request: Request, text: str = Form(""), url: str = Fo
     if not input_text:
         return HTMLResponse("<p class='error'>Не удалось извлечь текст</p>", status_code=400)
 
-    result = await analyze_text(input_text, input_url or None)
+    pool = getattr(request.app.state, "pool", None)
+    result = await analyze_text(input_text, input_url or None, pool=pool)
 
     verdict = result["verdict"]
     threat_type = result.get("threat_type", "disinformation")
@@ -129,10 +128,12 @@ async def analyze_endpoint(request: Request, text: str = Form(""), url: str = Fo
 
 @router.get("/analysis/{analysis_id}", response_class=HTMLResponse)
 async def analysis_detail(request: Request, analysis_id: str):
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        cursor = await db.execute(SELECT_ANALYSIS_BY_ID, (analysis_id,))
-        row = await cursor.fetchone()
+    pool = getattr(request.app.state, "pool", None)
+    if pool is None:
+        return HTMLResponse("<p>База данных недоступна</p>", status_code=503)
+
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(SELECT_ANALYSIS_BY_ID, analysis_id)
 
     if not row:
         return HTMLResponse("<p>Анализ не найден</p>", status_code=404)
@@ -165,37 +166,48 @@ async def history_page(request: Request, page: int = Query(1, ge=1)):
     per_page = 20
     offset = (page - 1) * per_page
 
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        cursor = await db.execute(SELECT_ANALYSES_COUNT)
-        total = (await cursor.fetchone())[0]
-        cursor = await db.execute(SELECT_ANALYSES_PAGE, (per_page, offset))
-        rows = await cursor.fetchall()
+    pool = getattr(request.app.state, "pool", None)
+    if pool is None:
+        return HTMLResponse("<p>База данных недоступна</p>", status_code=503)
+
+    async with pool.acquire() as conn:
+        total_row = await conn.fetchrow(SELECT_ANALYSES_COUNT)
+        total = total_row[0]
+        rows = await conn.fetch(SELECT_ANALYSES_PAGE, per_page, offset)
 
     total_pages = max(1, math.ceil(total / per_page))
 
     return templates.TemplateResponse("history.html", {
         "request": request,
-        "analyses": rows,
+        "analyses": [dict(r) for r in rows],
         "page": page,
         "total_pages": total_pages,
     })
 
 
 @router.get("/api/v1/sources")
-async def list_sources():
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        cursor = await db.execute(SELECT_ALL_SOURCES)
-        rows = await cursor.fetchall()
+async def list_sources(request: Request):
+    pool = getattr(request.app.state, "pool", None)
+    if pool is None:
+        return []
+
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(SELECT_ALL_SOURCES)
     return [dict(r) for r in rows]
 
 
 @router.post("/api/v1/sources")
-async def add_source(source: SourceRequest):
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute(INSERT_SOURCE, (
-            source.domain, source.credibility_score, source.category, source.notes
-        ))
-        await db.commit()
+async def add_source(request: Request, source: SourceRequest):
+    pool = getattr(request.app.state, "pool", None)
+    if pool is None:
+        return {"status": "error", "detail": "База данных недоступна"}
+
+    async with pool.acquire() as conn:
+        await conn.execute(
+            INSERT_SOURCE,
+            source.domain,
+            source.credibility_score,
+            source.category,
+            source.notes,
+        )
     return {"status": "ok", "domain": source.domain}

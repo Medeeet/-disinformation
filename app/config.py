@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -5,7 +6,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Пути
 MODELS_DIR = BASE_DIR / "models"
 DATA_DIR = BASE_DIR / "data"
-DB_PATH = BASE_DIR / "disinformation.db"
+
+# PostgreSQL — берётся из переменной окружения DATABASE_URL
+# По умолчанию: локальная БД без пароля (для разработки)
+DATABASE_URL: str = os.environ.get(
+    "DATABASE_URL",
+    "postgresql://postgres:postgres@localhost:5432/cybershield"
+)
 
 # ML
 ONNX_MODEL_PATH = MODELS_DIR / "model.onnx"

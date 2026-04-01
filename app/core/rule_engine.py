@@ -8,7 +8,7 @@ from app.rules.fact_check import check_fact_check
 from app.rules.phishing import check_phishing
 
 
-async def run_all_rules(text: str, url: str | None = None) -> dict:
+async def run_all_rules(text: str, url: str | None = None, pool=None) -> dict:
     """
     Запускает все правила и возвращает результат.
 
@@ -45,7 +45,7 @@ async def run_all_rules(text: str, url: str | None = None) -> dict:
     all_flags.extend(structural_flags)
 
     # Фактчекинг (async)
-    fact_check_score, fact_check_flags = await check_fact_check(text)
+    fact_check_score, fact_check_flags = await check_fact_check(text, pool=pool)
     all_flags.extend(fact_check_flags)
 
     # Фишинг и социальная инженерия

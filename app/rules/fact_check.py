@@ -6,7 +6,7 @@ import os
 
 import httpx
 
-from app.config import FACT_CHECK_API_KEY, FACT_CHECK_API_URL, DB_PATH
+from app.config import FACT_CHECK_API_KEY, FACT_CHECK_API_URL
 
 
 def _get_api_key() -> str:
@@ -17,33 +17,40 @@ def _hash_query(query: str) -> str:
     return hashlib.sha256(query.encode()).hexdigest()
 
 
-async def _get_cached(query_hash: str) -> dict | None:
+async def _get_cached(query_hash: str, pool) -> dict | None:
     """Ищет кэшированный результат."""
-    import aiosqlite
+    if pool is None:
+        return None
     try:
-        async with aiosqlite.connect(DB_PATH) as db:
-            cursor = await db.execute(
-                "SELECT response_json FROM fact_check_cache WHERE query_hash = ?",
-                (query_hash,)
+        async with pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT response_json FROM fact_check_cache WHERE query_hash = $1",
+                query_hash,
             )
-            row = await cursor.fetchone()
             if row:
-                return json.loads(row[0])
+                return json.loads(row["response_json"])
     except Exception:
         pass
     return None
 
 
-async def _save_cache(query_hash: str, response: dict):
+async def _save_cache(query_hash: str, response: dict, pool) -> None:
     """Сохраняет результат в кэш."""
-    import aiosqlite
+    if pool is None:
+        return
     try:
-        async with aiosqlite.connect(DB_PATH) as db:
-            await db.execute(
-                "INSERT OR REPLACE INTO fact_check_cache (query_hash, response_json) VALUES (?, ?)",
-                (query_hash, json.dumps(response, ensure_ascii=False))
+        async with pool.acquire() as conn:
+            await conn.execute(
+                """
+                INSERT INTO fact_check_cache (query_hash, response_json, fetched_at)
+                VALUES ($1, $2, NOW())
+                ON CONFLICT (query_hash) DO UPDATE SET
+                    response_json = EXCLUDED.response_json,
+                    fetched_at    = NOW()
+                """,
+                query_hash,
+                json.dumps(response, ensure_ascii=False),
             )
-            await db.commit()
     except Exception:
         pass
 
@@ -71,7 +78,7 @@ def _extract_key_claims(text: str) -> list[str]:
     return claims[:3]  # Максимум 3 запроса
 
 
-async def check_fact_check(text: str) -> tuple[float | None, list[str]]:
+async def check_fact_check(text: str, pool=None) -> tuple[float | None, list[str]]:
     """
     Проверяет текст через Google Fact Check API.
     Возвращает (score или None если API недоступно, list[str] результатов).
@@ -92,7 +99,7 @@ async def check_fact_check(text: str) -> tuple[float | None, list[str]]:
             query_hash = _hash_query(claim)
 
             # Проверяем кэш
-            cached = await _get_cached(query_hash)
+            cached = await _get_cached(query_hash, pool)
             if cached is not None:
                 results = cached.get("claims", [])
             else:
@@ -108,7 +115,7 @@ async def check_fact_check(text: str) -> tuple[float | None, list[str]]:
                     if resp.status_code == 200:
                         data = resp.json()
                         results = data.get("claims", [])
-                        await _save_cache(query_hash, data)
+                        await _save_cache(query_hash, data, pool)
                     else:
                         continue
                 except Exception:
