@@ -34,3 +34,11 @@ Thumbs.db
 node_modules/
 pptx_build/
 .~lock.*
+
+*.docx
+*.pptx
+*.sqlite3
+node_modules/
+venv/
+.claude/
+.~lock*
