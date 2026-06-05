@@ -53,6 +53,24 @@ if (-not $env:DATABASE_URL) {
 $h = if ($env:HOST) { $env:HOST } else { "0.0.0.0" }
 $p = if ($env:PORT) { $env:PORT } else { "8000" }
 
+# 5. PostgreSQL через Docker (если установлен) — для локальной БД
+$dbIsLocal = $env:DATABASE_URL -match "localhost|127\.0\.0\.1"
+if (-not $env:SKIP_DOCKER -and (Test-Path "docker-compose.yml") -and $dbIsLocal `
+        -and (Get-Command docker -ErrorAction SilentlyContinue)) {
+    docker info 2>$null | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host ">>> Поднимаю PostgreSQL через Docker..."
+        docker compose up -d --wait
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "[WARN] docker compose --wait не сработал, пробую без него..."
+            docker compose up -d
+            Start-Sleep -Seconds 5
+        }
+    } else {
+        Write-Host "[WARN] Docker установлен, но демон не запущен. Запусти Docker Desktop."
+    }
+}
+
 Write-Host ""
 Write-Host "================================================================"
 Write-Host "  CyberShield KZ"

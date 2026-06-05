@@ -1,0 +1,32 @@
+# CyberShield KZ — PostgreSQL для локальной разработки.
+#
+# Использование напрямую:
+#   docker compose up -d        # поднять Postgres в фоне
+#   docker compose down         # остановить (данные сохраняются в volume)
+#   docker compose down -v      # остановить и удалить данные
+#
+# start.sh / start.bat / start.ps1 автоматически вызывают `docker compose up -d --wait`
+# если Docker установлен — отдельно ничего запускать не нужно.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cybershield-pg
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: cybershield
+    ports:
+      - "5432:5432"
+    volumes:
+      - cybershield_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d cybershield"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+volumes:
+  cybershield_pg_data:

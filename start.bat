@@ -47,6 +47,28 @@ if not defined DATABASE_URL set "DATABASE_URL=postgresql://postgres:postgres@loc
 if not defined HOST set "HOST=0.0.0.0"
 if not defined PORT set "PORT=8000"
 
+REM 5. PostgreSQL через Docker (если установлен) — для локальной БД
+if not defined SKIP_DOCKER if exist "docker-compose.yml" (
+    where docker >nul 2>&1
+    if not errorlevel 1 (
+        echo !DATABASE_URL! | findstr /C:"localhost" /C:"127.0.0.1" >nul
+        if not errorlevel 1 (
+            docker info >nul 2>&1
+            if not errorlevel 1 (
+                echo ^>^>^> Поднимаю PostgreSQL через Docker...
+                docker compose up -d --wait
+                if errorlevel 1 (
+                    echo [WARN] docker compose --wait не сработал, пробую без него...
+                    docker compose up -d
+                    timeout /t 5 /nobreak >nul
+                )
+            ) else (
+                echo [WARN] Docker установлен, но демон не запущен. Запусти Docker Desktop.
+            )
+        )
+    )
+)
+
 echo.
 echo ================================================================
 echo   CyberShield KZ
