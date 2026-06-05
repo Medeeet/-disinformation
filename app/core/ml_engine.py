@@ -1,7 +1,15 @@
 """ML-движок: загрузка и инференс ONNX модели."""
 
 import logging
+import os
+
 import numpy as np
+
+# transformers используется ТОЛЬКО для токенизатора (инференс идёт через ONNX Runtime),
+# поэтому подавляем предупреждение об отсутствии PyTorch/TensorFlow/Flax —
+# DL-бэкенд здесь не нужен.
+os.environ.setdefault("TRANSFORMERS_VERBOSITY", "error")
+os.environ.setdefault("TRANSFORMERS_NO_ADVISORY_WARNINGS", "1")
 
 from app.config import ONNX_MODEL_PATH, TOKENIZER_PATH, MAX_SEQ_LENGTH
 
