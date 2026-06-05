@@ -7,9 +7,7 @@ __pycache__/
 dist/
 build/
 
-# ML models (too large for git)
-models/model.onnx
-models/tokenizer/
+# ML models — отслеживаются через Git LFS (см. .gitattributes)
 
 # Database
 *.db
