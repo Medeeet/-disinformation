@@ -18,7 +18,8 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: cybershield
     ports:
-      - "5432:5432"
+      # Хост порты POSTGRES_PORT арқылы өзгертіледі (5432 бос емес болса — start-скрипт басқасын таңдайды)
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - cybershield_pg_data:/var/lib/postgresql/data
     healthcheck:
