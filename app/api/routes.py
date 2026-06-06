@@ -85,12 +85,24 @@ async def analyze_endpoint(request: Request, text: str = Form(""), url: str = Fo
         return HTMLResponse("<p class='error'>Мәтін немесе URL енгізіңіз</p>", status_code=400)
 
     # Если указан URL, пытаемся извлечь текст
+    fetch_note: str | None = None
     if input_url and not input_text:
         import httpx
         from bs4 import BeautifulSoup
 
+        # Браузерный User-Agent: многие сайты (Царьград, RT и др.) отдают 403/блок
+        # на дефолтный httpx-агент. С реальным UA страница чаще загружается.
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+            ),
+            "Accept-Language": "ru,kk;q=0.9,en;q=0.8",
+        }
         try:
-            async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
+            async with httpx.AsyncClient(
+                timeout=15, follow_redirects=True, headers=headers
+            ) as client:
                 resp = await client.get(input_url)
                 resp.raise_for_status()
             soup = BeautifulSoup(resp.text, "html.parser")
@@ -102,13 +114,30 @@ async def analyze_endpoint(request: Request, text: str = Form(""), url: str = Fo
             if not input_text:
                 input_text = soup.get_text(separator="\n", strip=True)
         except Exception as e:
-            return HTMLResponse(f"<p class='error'>URL жүктеу қатесі: {e}</p>", status_code=400)
+            # Не прерываем анализ ошибкой: текст не получили, но домен может быть
+            # известен — тогда вынесем вердикт по репутации источника (ниже).
+            fetch_note = (
+                f"Бетті жүктеу мүмкін болмады ({type(e).__name__}) — "
+                f"талдау тек дереккөз беделі бойынша жүргізілді"
+            )
 
+    # Текст не получили (фетч упал или страница пустая).
     if not input_text:
-        return HTMLResponse("<p class='error'>Мәтінді алу мүмкін болмады</p>", status_code=400)
+        from app.rules.source_check import _extract_domain, _load_sources
+        domain = _extract_domain(input_url) if input_url else None
+        if domain and domain in _load_sources():
+            # Домен есть в базе — анализируем по репутации источника без текста.
+            input_text = ""
+            if fetch_note is None:
+                fetch_note = "Бет мазмұнын алу мүмкін болмады — талдау тек дереккөз беделі бойынша"
+        else:
+            msg = fetch_note or "Мәтінді алу мүмкін болмады"
+            return HTMLResponse(f"<p class='error'>{msg}</p>", status_code=400)
 
     pool = getattr(request.app.state, "pool", None)
     result = await analyze_text(input_text, input_url or None, pool=pool)
+    if fetch_note:
+        result.setdefault("flagged_patterns", []).insert(0, fetch_note)
 
     verdict = result["verdict"]
     threat_type = result.get("threat_type", "disinformation")
