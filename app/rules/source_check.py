@@ -69,7 +69,7 @@ def _check_domain_mimicry(domain: str) -> tuple[float, list[str]]:
     for legit in all_legit:
         legit_base = legit.split(".")[0]
         if legit_base in domain and domain != legit and not domain.endswith(f".{legit}"):
-            flags.append(f"[Кибербез] Тайпсквоттинг: домен '{domain}' имитирует '{legit}'")
+            flags.append(f"[Киберқауіпсіздік] Тайпсквоттинг: '{domain}' домені '{legit}'-ке еліктейді")
             return 0.8, flags
 
     # Проверка на замену символов (гомоглифы / опечатки)
@@ -83,7 +83,7 @@ def _check_domain_mimicry(domain: str) -> tuple[float, list[str]]:
     for legit_name, typos in _typosquat_pairs.items():
         for typo in typos:
             if domain_base == typo or domain_base.startswith(typo):
-                flags.append(f"[Кибербез] Тайпсквоттинг: '{domain}' похож на '{legit_name}'")
+                flags.append(f"[Киберқауіпсіздік] Тайпсквоттинг: '{domain}' '{legit_name}'-ге ұқсас")
                 return 0.85, flags
 
     return 0.0, flags
@@ -99,7 +99,7 @@ def _check_suspicious_tld(domain: str) -> tuple[float, list[str]]:
                        ".work", ".racing", ".download", ".stream", ".loan", ".date", ".win"}
     for tld in suspicious_tlds:
         if domain.endswith(tld):
-            flags.append(f"[Кибербез] Подозрительный домен верхнего уровня: {tld}")
+            flags.append(f"[Киберқауіпсіздік] Күмәнді жоғарғы деңгейлі домен: {tld}")
             return 0.5, flags
 
     return 0.0, flags
@@ -115,7 +115,7 @@ def _check_url_security(url: str) -> tuple[float, list[str]]:
 
     # HTTP без шифрования
     if url.lower().startswith("http://"):
-        flags.append("[Кибербез] URL без шифрования (HTTP вместо HTTPS)")
+        flags.append("[Киберқауіпсіздік] Шифрлаусыз URL (HTTPS орнына HTTP)")
         scores.append(0.3)
 
     try:
@@ -129,27 +129,27 @@ def _check_url_security(url: str) -> tuple[float, list[str]]:
 
     # IP-адрес вместо домена
     if re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', hostname):
-        flags.append(f"[Кибербез] URL использует IP-адрес вместо домена: {hostname}")
+        flags.append(f"[Киберқауіпсіздік] URL домен орнына IP-мекенжайын қолданады: {hostname}")
         scores.append(0.7)
 
     # Избыточная длина URL (часто используется в фишинге)
     if len(url) > 200:
-        flags.append(f"[Кибербез] Подозрительно длинный URL ({len(url)} символов)")
+        flags.append(f"[Киберқауіпсіздік] Күмәнді ұзын URL ({len(url)} таңба)")
         scores.append(0.4)
 
     # Множество поддоменов
     if hostname.count(".") >= 4:
-        flags.append(f"[Кибербез] Множество поддоменов: {hostname}")
+        flags.append(f"[Киберқауіпсіздік] Көп субдомен: {hostname}")
         scores.append(0.6)
 
     # Символ @ в URL (редирект-трюк)
     if "@" in url.split("//", 1)[-1].split("/", 1)[0]:
-        flags.append("[Кибербез] Символ @ в URL — возможная маскировка реального домена")
+        flags.append("[Киберқауіпсіздік] URL-дегі @ таңбасы — нақты доменді жасыру мүмкіндігі")
         scores.append(0.8)
 
     # Кодированные символы в домене
     if "%" in hostname:
-        flags.append("[Кибербез] URL-кодирование в имени домена — возможная обфускация")
+        flags.append("[Киберқауіпсіздік] Домен атындағы URL-кодтау — обфускация мүмкіндігі")
         scores.append(0.6)
 
     # Подозрительные ключевые слова в пути
@@ -158,12 +158,12 @@ def _check_url_security(url: str) -> tuple[float, list[str]]:
     path_lower = path.lower()
     kw_found = [kw for kw in phish_path_keywords if kw in path_lower]
     if len(kw_found) >= 2:
-        flags.append(f"[Кибербез] URL содержит фишинговые ключевые слова: {', '.join(kw_found)}")
+        flags.append(f"[Киберқауіпсіздік] URL-де фишинг кілт сөздері бар: {', '.join(kw_found)}")
         scores.append(0.5)
 
     # Двойное расширение файла
     if re.search(r'\.\w{2,4}\.\w{2,4}$', path):
-        flags.append("[Кибербез] Двойное расширение файла в URL — возможная маскировка")
+        flags.append("[Киберқауіпсіздік] URL-дегі қос файл кеңейтімі — жасыру мүмкіндігі")
         scores.append(0.6)
 
     if scores:
@@ -196,7 +196,7 @@ def check_source(url: str | None) -> tuple[float, list[str]]:
         score = 1.0 - credibility
         if score > 0.5:
             category = source_info.get("category", "")
-            flags.append(f"Источник '{domain}' с низкой репутацией (категория: {category})")
+            flags.append(f"'{domain}' дереккөзінің беделі төмен (санаты: {category})")
         scores.append(score)
 
     # Проверка мимикрии / тайпсквоттинга

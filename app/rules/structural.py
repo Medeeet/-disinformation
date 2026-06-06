@@ -17,10 +17,10 @@ def check_structural(text: str, url: str | None = None) -> tuple[float, list[str
 
     # Слишком короткий текст (< 50 слов) — подозрительно для статьи
     if word_count < 50:
-        flags.append(f"Очень короткий текст ({word_count} слов)")
+        flags.append(f"Өте қысқа мәтін ({word_count} сөз)")
         total_weight += 0.4
     elif word_count < 100:
-        flags.append(f"Короткий текст ({word_count} слов)")
+        flags.append(f"Қысқа мәтін ({word_count} сөз)")
         total_weight += 0.2
 
     # Нет ссылок на источники в тексте
@@ -33,7 +33,7 @@ def check_structural(text: str, url: str | None = None) -> tuple[float, list[str
         text, re.IGNORECASE
     ))
     if not has_links and not has_domain_ref and not has_citations:
-        flags.append("Отсутствуют ссылки на источники")
+        flags.append("Дереккөздерге сілтемелер жоқ")
         total_weight += 0.3
 
     # Анонимные эксперты
@@ -43,7 +43,7 @@ def check_structural(text: str, url: str | None = None) -> tuple[float, list[str
         text, re.IGNORECASE
     )
     if anonymous_experts and not re.search(r"(?:университет|институт|лаборатори|центр\s)", text, re.IGNORECASE):
-        flags.append(f"Ссылки на анонимных экспертов без аффилиации ({len(anonymous_experts)} раз)")
+        flags.append(f"Аффилиациясы жоқ анонимді сарапшыларға сілтеме ({len(anonymous_experts)} рет)")
         total_weight += 0.7
 
     # Чрезмерное количество абзацев из одного предложения
@@ -53,7 +53,7 @@ def check_structural(text: str, url: str | None = None) -> tuple[float, list[str
         short_sentences = sum(1 for s in sentences if len(s.split()) < 8)
         short_ratio = short_sentences / len(sentences)
         if short_ratio > 0.7 and len(sentences) > 5:
-            flags.append(f"Преобладают очень короткие предложения ({short_ratio:.0%})")
+            flags.append(f"Өте қысқа сөйлемдер басым ({short_ratio:.0%})")
             total_weight += 0.3
 
     # Нет дат/временных привязок
@@ -64,7 +64,7 @@ def check_structural(text: str, url: str | None = None) -> tuple[float, list[str
         text, re.IGNORECASE
     ))
     if not has_date:
-        flags.append("Отсутствуют конкретные даты")
+        flags.append("Нақты күндер жоқ")
         total_weight += 0.3
 
     # Призыв к распространению
@@ -74,7 +74,7 @@ def check_structural(text: str, url: str | None = None) -> tuple[float, list[str
         text, re.IGNORECASE
     )
     if share_patterns:
-        flags.append("Призыв к распространению")
+        flags.append("Тарату туралы үндеу")
         total_weight += 0.6
 
     score = min(1.0, total_weight / max_weight)

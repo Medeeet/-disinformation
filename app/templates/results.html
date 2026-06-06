@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Результаты — CyberShield KZ{% endblock %}
+{% block title %}Нәтижелер — CyberShield KZ{% endblock %}
 
 {% block content %}
 <section class="results-page">
-    <a href="/" class="btn btn-back">&larr; Новый анализ</a>
+    <a href="/" class="btn btn-back">&larr; Жаңа талдау</a>
 
     <div class="score-card score-{{ verdict }}">
         <div class="score-circle">
@@ -12,7 +12,7 @@
         </div>
         <div class="score-info">
             <h2>{{ verdict_label }}</h2>
-            {% if threat_type and threat_type != 'safe' %}
+            {% if threat_type and threat_type not in ['safe', 'insufficient_text'] %}
             <span class="threat-badge threat-{{ threat_type }}">{{ threat_label }}</span>
             {% endif %}
             <p class="score-description">{{ verdict_description }}</p>
@@ -27,7 +27,7 @@
             </div>
             <span class="detail-score">{{ "%.0f"|format((ml_score or 0) * 100) }}%</span>
             {% if not ml_score %}
-            <p class="detail-note">Модель не загружена</p>
+            <p class="detail-note">Модель жүктелмеген</p>
             {% endif %}
         </div>
 
@@ -48,7 +48,7 @@
         </div>
 
         <div class="detail-card">
-            <h3>Источник</h3>
+            <h3>Дереккөз</h3>
             <div class="progress-bar">
                 <div class="progress-fill" style="width: {{ (rule_scores.source_credibility or 0) * 100 }}%"></div>
             </div>
@@ -56,7 +56,7 @@
         </div>
 
         <div class="detail-card">
-            <h3>Структура</h3>
+            <h3>Құрылым</h3>
             <div class="progress-bar">
                 <div class="progress-fill" style="width: {{ (rule_scores.structural or 0) * 100 }}%"></div>
             </div>
@@ -64,7 +64,7 @@
         </div>
 
         <div class="detail-card detail-card-cyber">
-            <h3>Фишинг / Соц. инженерия</h3>
+            <h3>Фишинг / Әлеуметтік инженерия</h3>
             <div class="progress-bar">
                 <div class="progress-fill progress-fill-cyber" style="width: {{ (rule_scores.phishing or 0) * 100 }}%"></div>
             </div>
@@ -74,10 +74,10 @@
 
     {% if flagged_patterns %}
     <div class="flagged-section">
-        <h3>Обнаруженные признаки</h3>
+        <h3>Анықталған белгілер</h3>
         <ul class="flags-list">
             {% for flag in flagged_patterns %}
-            <li class="flag-item {% if '[Кибербез]' in flag %}flag-item-cyber{% endif %}">{{ flag }}</li>
+            <li class="flag-item {% if '[Киберқауіпсіздік]' in flag %}flag-item-cyber{% endif %}">{{ flag }}</li>
             {% endfor %}
         </ul>
     </div>
@@ -85,7 +85,7 @@
 
     {% if input_text %}
     <div class="source-text">
-        <h3>Исходный текст</h3>
+        <h3>Бастапқы мәтін</h3>
         <p>{{ input_text[:1000] }}{% if input_text|length > 1000 %}...{% endif %}</p>
     </div>
     {% endif %}

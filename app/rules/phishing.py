@@ -34,7 +34,7 @@ def _check_patterns(text: str, patterns: list[dict]) -> tuple[float, list[str]]:
     for p in patterns:
         try:
             if re.search(p["pattern"], text, re.IGNORECASE):
-                flags.append(f"[Кибербез] {p['label']}")
+                flags.append(f"[Киберқауіпсіздік] {p['label']}")
                 max_score = max(max_score, p["weight"])
         except re.error:
             continue
@@ -58,7 +58,7 @@ def _check_suspicious_urls_in_text(text: str) -> tuple[float, list[str]]:
 
         # IP-адрес вместо домена
         if re.search(r'https?://\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', url_lower):
-            flags.append(f"[Кибербез] URL с IP-адресом вместо домена: {url[:60]}")
+            flags.append(f"[Киберқауіпсіздік] Домен орнына IP-мекенжайы бар URL: {url[:60]}")
             score = max(score, 0.7)
 
         # Подозрительные сокращатели ссылок
@@ -66,7 +66,7 @@ def _check_suspicious_urls_in_text(text: str) -> tuple[float, list[str]]:
                        "is.gd", "buff.ly", "clck.ru", "cutt.ly", "rb.gy"]
         for s in shorteners:
             if s in url_lower:
-                flags.append(f"[Кибербез] Сокращённая ссылка ({s}) — может скрывать вредоносный URL")
+                flags.append(f"[Киберқауіпсіздік] Қысқартылған сілтеме ({s}) — зиянды URL-ді жасыруы мүмкін")
                 score = max(score, 0.5)
                 break
 
@@ -76,7 +76,7 @@ def _check_suspicious_urls_in_text(text: str) -> tuple[float, list[str]]:
             parsed = urlparse(url if "://" in url else f"https://{url}")
             hostname = parsed.hostname or ""
             if hostname.count(".") >= 4:
-                flags.append(f"[Кибербез] Подозрительная структура URL (множество поддоменов): {hostname[:60]}")
+                flags.append(f"[Киберқауіпсіздік] Күмәнді URL құрылымы (көп субдомен): {hostname[:60]}")
                 score = max(score, 0.6)
         except Exception:
             pass
@@ -87,7 +87,7 @@ def _check_suspicious_urls_in_text(text: str) -> tuple[float, list[str]]:
         domain_part = url_lower.split("?")[0]
         kw_count = sum(1 for kw in phish_keywords if kw in domain_part)
         if kw_count >= 2:
-            flags.append(f"[Кибербез] URL содержит типичные фишинговые ключевые слова: {url[:60]}")
+            flags.append(f"[Киберқауіпсіздік] URL-де типтік фишинг кілт сөздері бар: {url[:60]}")
             score = max(score, 0.6)
 
     return score, flags
@@ -113,7 +113,7 @@ def _check_urgency_pressure(text: str) -> tuple[float, list[str]]:
     for pattern, weight in urgency_phrases_ru + urgency_phrases_kz:
         try:
             if re.search(pattern, text, re.IGNORECASE):
-                flags.append(f"[Кибербез] Тактика давления через срочность")
+                flags.append(f"[Киберқауіпсіздік] Шұғылдық арқылы қысым жасау тактикасы")
                 score = max(score, weight)
                 break
         except re.error:

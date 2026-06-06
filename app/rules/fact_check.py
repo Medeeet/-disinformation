@@ -138,8 +138,8 @@ async def check_fact_check(text: str, pool=None) -> tuple[float | None, list[str
 
             if any(kw in rating for kw in ("false", "ложь", "неправда", "фейк", "fake")):
                 false_count += 1
-                publisher = review.get("publisher", {}).get("name", "Фактчекер")
-                flags.append(f"Фактчек: '{claim_text}...' — {rating} ({publisher})")
+                publisher = review.get("publisher", {}).get("name", "Факт-тексеруші")
+                flags.append(f"Факт-тексеру: '{claim_text}...' — {rating} ({publisher})")
             elif any(kw in rating for kw in ("true", "правда", "верно")):
                 true_count += 1
             else:

@@ -49,10 +49,10 @@ def _analyze_verb_tenses(words: list[str]) -> tuple[float, list[str]]:
     if total_verbs >= 3:
         present_ratio = present_count / total_verbs
         if present_ratio > 0.8:
-            flags.append(f"Чрезмерное настоящее время ({present_ratio:.0%} глаголов)")
+            flags.append(f"Осы шақтың шамадан тыс қолданылуы (етістіктердің {present_ratio:.0%})")
             return min(1.0, present_ratio * 0.6), flags
         elif present_ratio > 0.6:
-            flags.append(f"Повышенное настоящее время ({present_ratio:.0%} глаголов)")
+            flags.append(f"Осы шақтың жоғары қолданылуы (етістіктердің {present_ratio:.0%})")
             return present_ratio * 0.3, flags
 
     return 0.0, flags
@@ -89,10 +89,10 @@ def _analyze_pronouns(words: list[str]) -> tuple[float, list[str]]:
     total = first_person + third_person + impersonal
     if total >= 2:
         if first_person == 0 and (third_person + impersonal) >= 3:
-            flags.append("Полное отсутствие первого лица — безличный стиль")
+            flags.append("Бірінші жақтың мүлдем болмауы — жекеленбеген стиль")
             return 0.5, flags
         elif first_person == 0:
-            flags.append("Отсутствие первого лица")
+            flags.append("Бірінші жақтың болмауы")
             return 0.2, flags
 
     return 0.0, flags
@@ -120,16 +120,16 @@ def _analyze_emotional_loading(words: list[str]) -> tuple[float, list[str]]:
     if len(words) > 0:
         arousal_ratio = arousal_count / len(words)
         if arousal_ratio > 0.05:
-            flags.append(f"Высокая эмоциональная нагруженность ({arousal_count} слов)")
+            flags.append(f"Жоғары эмоционалды жүктеме ({arousal_count} сөз)")
             score = min(1.0, arousal_ratio * 10)
         elif arousal_count >= 3:
-            flags.append(f"Умеренная эмоциональная нагруженность ({arousal_count} слов)")
+            flags.append(f"Орташа эмоционалды жүктеме ({arousal_count} сөз)")
             score = 0.3
         else:
             score = arousal_count * 0.05
 
         if manip_count >= 2:
-            flags.append(f"Манипулятивная лексика ({manip_count} слов)")
+            flags.append(f"Манипулятивті лексика ({manip_count} сөз)")
             score = min(1.0, score + manip_count * 0.15)
     else:
         score = 0.0

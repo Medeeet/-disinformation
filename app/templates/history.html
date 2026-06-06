@@ -1,18 +1,18 @@
 {% extends "base.html" %}
 
-{% block title %}История — Детектор дезинформации{% endblock %}
+{% block title %}Тарих — Дезинформацияны анықтаушы{% endblock %}
 
 {% block content %}
 <section class="history-page">
-    <h1>История анализов</h1>
+    <h1>Талдаулар тарихы</h1>
 
     {% if analyses %}
     <table class="history-table">
         <thead>
             <tr>
-                <th>Дата</th>
-                <th>Текст</th>
-                <th>Скор</th>
+                <th>Күні</th>
+                <th>Мәтін</th>
+                <th>Балл</th>
                 <th>Вердикт</th>
                 <th></th>
             </tr>
@@ -24,7 +24,7 @@
                 <td class="text-preview">{{ a.input_text[:100] }}{% if a.input_text|length > 100 %}...{% endif %}</td>
                 <td>{{ "%.0f"|format(a.overall_score * 100) }}%</td>
                 <td><span class="badge badge-{{ a.verdict }}">{{ a.verdict }}</span></td>
-                <td><a href="/analysis/{{ a.id }}" class="btn btn-sm">Подробнее</a></td>
+                <td><a href="/analysis/{{ a.id }}" class="btn btn-sm">Толығырақ</a></td>
             </tr>
             {% endfor %}
         </tbody>
@@ -33,17 +33,17 @@
     {% if total_pages > 1 %}
     <div class="pagination">
         {% if page > 1 %}
-        <a href="/history?page={{ page - 1 }}" class="btn btn-sm">&larr; Назад</a>
+        <a href="/history?page={{ page - 1 }}" class="btn btn-sm">&larr; Артқа</a>
         {% endif %}
-        <span>Страница {{ page }} из {{ total_pages }}</span>
+        <span>{{ total_pages }} беттің {{ page }}-беті</span>
         {% if page < total_pages %}
-        <a href="/history?page={{ page + 1 }}" class="btn btn-sm">Далее &rarr;</a>
+        <a href="/history?page={{ page + 1 }}" class="btn btn-sm">Әрі қарай &rarr;</a>
         {% endif %}
     </div>
     {% endif %}
 
     {% else %}
-    <p class="empty-state">Пока нет анализов. <a href="/">Начать анализ</a></p>
+    <p class="empty-state">Әзірге талдаулар жоқ. <a href="/">Талдауды бастау</a></p>
     {% endif %}
 </section>
 {% endblock %}

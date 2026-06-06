@@ -21,8 +21,14 @@ def combine_scores(ml_score: float | None, rule_score: float) -> tuple[float, st
     """
     if ml_score is not None:
         if ml_score > _ML_ALARM_THRESHOLD and rule_score < _RULES_CLEAN_THRESHOLD:
-            # Правила не подтверждают угрозу — даём им приоритет
-            w_ml, w_rules = 0.20, 0.80
+            # Конфликт: ML уверенно бьёт тревогу, правила молчат.
+            # Раньше вес ML сбрасывался до 0.20 — это хоронило реальную
+            # дезинформацию на казахском, где правила слабы, а ML — основной
+            # сигнал (уверенный на 100% ML не мог поднять вердикт выше «reliable»).
+            # Теперь ML сохраняет заметный вес: уверенная модель + слабые
+            # сигналы правил дают «подозрительно», а benign-текст с почти
+            # нулевыми правилами остаётся «uncertain», а не ложной тревогой.
+            w_ml, w_rules = 0.45, 0.55
         else:
             w_ml, w_rules = ML_WEIGHT, RULES_WEIGHT
 

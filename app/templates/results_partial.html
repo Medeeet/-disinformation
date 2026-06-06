@@ -4,7 +4,7 @@
     </div>
     <div class="score-info">
         <h2>{{ verdict_label }}</h2>
-        {% if threat_type and threat_type != 'safe' %}
+        {% if threat_type and threat_type not in ['safe', 'insufficient_text'] %}
         <span class="threat-badge threat-{{ threat_type }}">{{ threat_label }}</span>
         {% endif %}
         <p class="score-description">{{ verdict_description }}</p>
@@ -19,7 +19,7 @@
         </div>
         <span class="detail-score">{{ "%.0f"|format((ml_score or 0) * 100) }}%</span>
         {% if not ml_score %}
-        <p class="detail-note">Модель не загружена</p>
+        <p class="detail-note">Модель жүктелмеген</p>
         {% endif %}
     </div>
 
@@ -40,7 +40,7 @@
     </div>
 
     <div class="detail-card">
-        <h3>Источник / URL</h3>
+        <h3>Дереккөз / URL</h3>
         <div class="progress-bar">
             <div class="progress-fill" style="width: {{ (rule_scores.source_credibility or 0) * 100 }}%"></div>
         </div>
@@ -48,7 +48,7 @@
     </div>
 
     <div class="detail-card">
-        <h3>Структура</h3>
+        <h3>Құрылым</h3>
         <div class="progress-bar">
             <div class="progress-fill" style="width: {{ (rule_scores.structural or 0) * 100 }}%"></div>
         </div>
@@ -56,7 +56,7 @@
     </div>
 
     <div class="detail-card detail-card-cyber">
-        <h3>Фишинг / Соц. инженерия</h3>
+        <h3>Фишинг / Әлеуметтік инженерия</h3>
         <div class="progress-bar">
             <div class="progress-fill progress-fill-cyber" style="width: {{ (rule_scores.phishing or 0) * 100 }}%"></div>
         </div>
@@ -66,13 +66,13 @@
 
 {% if flagged_patterns %}
 <div class="flagged-section">
-    <h3>Обнаруженные признаки</h3>
+    <h3>Анықталған белгілер</h3>
     <ul class="flags-list">
         {% for flag in flagged_patterns %}
-        <li class="flag-item {% if '[Кибербез]' in flag %}flag-item-cyber{% endif %}">{{ flag }}</li>
+        <li class="flag-item {% if '[Киберқауіпсіздік]' in flag %}flag-item-cyber{% endif %}">{{ flag }}</li>
         {% endfor %}
     </ul>
 </div>
 {% endif %}
 
-<a href="/analysis/{{ analysis_id }}" class="btn btn-secondary">Полный отчёт</a>
+<a href="/analysis/{{ analysis_id }}" class="btn btn-secondary">Толық есеп</a>

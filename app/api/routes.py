@@ -20,51 +20,55 @@ router = APIRouter()
 templates = Jinja2Templates(directory=BASE_DIR / "app" / "templates")
 
 _THREAT_NAMES = {
-    "disinformation":     "дезинформация",
+    "disinformation":     "жалған ақпарат",
     "phishing":           "фишинг",
-    "social_engineering": "социальная инженерия",
-    "scam":               "мошенничество",
-    "propaganda":         "пропаганда",
+    "social_engineering": "әлеуметтік инженерия",
+    "scam":               "алаяқтық",
+    "propaganda":         "насихат",
     "safe":               "",
 }
 
 _THREAT_LABELS = {
-    "disinformation":     "Дезинформация",
+    "disinformation":     "Жалған ақпарат",
     "phishing":           "Фишинг",
-    "social_engineering": "Социальная инженерия",
-    "scam":               "Мошенничество (скам)",
-    "propaganda":         "Пропаганда",
-    "safe":               "Безопасно",
+    "social_engineering": "Әлеуметтік инженерия",
+    "scam":               "Алаяқтық (скам)",
+    "propaganda":         "Насихат",
+    "safe":               "Қауіпсіз",
 }
 
 _THREAT_DESCRIPTIONS = {
-    "disinformation":     "Текст содержит признаки дезинформации: манипулятивная риторика, кликбейт или ненадёжный источник",
-    "phishing":           "Обнаружены признаки фишинговой атаки: запросы данных, имитация банков или госорганов",
-    "social_engineering": "Обнаружены методы социальной инженерии: давление, запугивание, имитация власти",
-    "scam":               "Обнаружены признаки мошенничества: фейковые выигрыши, схемы «комиссия за приз»",
-    "propaganda":         "Источник относится к категории пропагандистских СМИ с низким рейтингом доверия",
-    "safe":               "Информационных угроз не обнаружено",
+    "disinformation":     "Мәтінде жалған ақпарат белгілері бар: манипулятивті риторика, кликбейт немесе сенімсіз дереккөз",
+    "phishing":           "Фишингтік шабуыл белгілері анықталды: деректерді сұрау, банктер немесе мемлекеттік органдарды имитациялау",
+    "social_engineering": "Әлеуметтік инженерия әдістері анықталды: қысым, қорқыту, билікті имитациялау",
+    "scam":               "Алаяқтық белгілері анықталды: жалған ұтыстар, «жүлде үшін комиссия» схемалары",
+    "propaganda":         "Дереккөз сенім рейтингі төмен насихаттық БАҚ санатына жатады",
+    "safe":               "Ақпараттық қауіптер анықталмады",
 }
 
 
 def _build_verdict_label(verdict: str, threat_type: str) -> str:
     if verdict == "reliable":
-        return "Угроз не обнаружено"
+        return "Қауіп анықталмады"
     if verdict == "uncertain":
+        if threat_type == "insufficient_text":
+            return "Талдауға мәтін жеткіліксіз"
         threat = _THREAT_NAMES.get(threat_type, "")
-        return f"Неопределённо" + (f" / {threat}" if threat else "")
+        return f"Анық емес" + (f" / {threat}" if threat else "")
     if verdict == "suspicious":
-        return f"Подозрительно: {_THREAT_LABELS.get(threat_type, 'неизвестная угроза')}"
+        return f"Күмәнді: {_THREAT_LABELS.get(threat_type, 'белгісіз қауіп')}"
     # likely_disinformation
-    return f"Высокий риск: {_THREAT_LABELS.get(threat_type, 'неизвестная угроза')}"
+    return f"Жоғары қауіп: {_THREAT_LABELS.get(threat_type, 'белгісіз қауіп')}"
 
 
 def _build_verdict_description(verdict: str, threat_type: str) -> str:
     if verdict == "reliable":
         return _THREAT_DESCRIPTIONS["safe"]
     if verdict == "uncertain":
-        return "Обнаружены слабые признаки угрозы, но их недостаточно для однозначного вывода"
-    return _THREAT_DESCRIPTIONS.get(threat_type, "Обнаружены признаки информационной угрозы")
+        if threat_type == "insufficient_text":
+            return "Талдау үшін мәтін тым қысқа — кемінде 30 сөз қажет"
+        return "Қауіптің әлсіз белгілері анықталды, бірақ нақты қорытынды жасауға жеткіліксіз"
+    return _THREAT_DESCRIPTIONS.get(threat_type, "Ақпараттық қауіп белгілері анықталды")
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -78,7 +82,7 @@ async def analyze_endpoint(request: Request, text: str = Form(""), url: str = Fo
     input_url = url.strip()
 
     if not input_text and not input_url:
-        return HTMLResponse("<p class='error'>Введите текст или URL</p>", status_code=400)
+        return HTMLResponse("<p class='error'>Мәтін немесе URL енгізіңіз</p>", status_code=400)
 
     # Если указан URL, пытаемся извлечь текст
     if input_url and not input_text:
@@ -98,10 +102,10 @@ async def analyze_endpoint(request: Request, text: str = Form(""), url: str = Fo
             if not input_text:
                 input_text = soup.get_text(separator="\n", strip=True)
         except Exception as e:
-            return HTMLResponse(f"<p class='error'>Ошибка загрузки URL: {e}</p>", status_code=400)
+            return HTMLResponse(f"<p class='error'>URL жүктеу қатесі: {e}</p>", status_code=400)
 
     if not input_text:
-        return HTMLResponse("<p class='error'>Не удалось извлечь текст</p>", status_code=400)
+        return HTMLResponse("<p class='error'>Мәтінді алу мүмкін болмады</p>", status_code=400)
 
     pool = getattr(request.app.state, "pool", None)
     result = await analyze_text(input_text, input_url or None, pool=pool)
@@ -130,13 +134,13 @@ async def analyze_endpoint(request: Request, text: str = Form(""), url: str = Fo
 async def analysis_detail(request: Request, analysis_id: str):
     pool = getattr(request.app.state, "pool", None)
     if pool is None:
-        return HTMLResponse("<p>База данных недоступна</p>", status_code=503)
+        return HTMLResponse("<p>Дерекқор қолжетімсіз</p>", status_code=503)
 
     async with pool.acquire() as conn:
         row = await conn.fetchrow(SELECT_ANALYSIS_BY_ID, analysis_id)
 
     if not row:
-        return HTMLResponse("<p>Анализ не найден</p>", status_code=404)
+        return HTMLResponse("<p>Талдау табылмады</p>", status_code=404)
 
     details = json.loads(row["details_json"]) if row["details_json"] else {}
     verdict = row["verdict"]
@@ -168,7 +172,7 @@ async def history_page(request: Request, page: int = Query(1, ge=1)):
 
     pool = getattr(request.app.state, "pool", None)
     if pool is None:
-        return HTMLResponse("<p>База данных недоступна</p>", status_code=503)
+        return HTMLResponse("<p>Дерекқор қолжетімсіз</p>", status_code=503)
 
     async with pool.acquire() as conn:
         total_row = await conn.fetchrow(SELECT_ANALYSES_COUNT)
@@ -200,7 +204,7 @@ async def list_sources(request: Request):
 async def add_source(request: Request, source: SourceRequest):
     pool = getattr(request.app.state, "pool", None)
     if pool is None:
-        return {"status": "error", "detail": "База данных недоступна"}
+        return {"status": "error", "detail": "Дерекқор қолжетімсіз"}
 
     async with pool.acquire() as conn:
         await conn.execute(
